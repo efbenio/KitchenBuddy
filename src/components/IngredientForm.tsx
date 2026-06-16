@@ -8,12 +8,11 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Platform,
+  Modal,
   StyleSheet,
   Alert,
   Switch,
 } from 'react-native'
-import DateTimePicker from '@react-native-community/datetimepicker'
 import {
   Category,
   ConfectionType,
@@ -59,6 +58,28 @@ export const IngredientForm: React.FC<Props> = ({ initial, onSubmit, submitLabel
     initial?.expirationDate ? new Date(initial.expirationDate) : undefined
   )
   const [showPicker, setShowPicker] = useState(false)
+  const [pickerDay, setPickerDay] = useState('')
+  const [pickerMonth, setPickerMonth] = useState('')
+  const [pickerYear, setPickerYear] = useState('')
+
+  const handleOpenPicker = (): void => {
+    const ref = expirationDate ?? new Date()
+    setPickerDay(String(ref.getDate()).padStart(2, '0'))
+    setPickerMonth(String(ref.getMonth() + 1).padStart(2, '0'))
+    setPickerYear(String(ref.getFullYear()))
+    setShowPicker(true)
+  }
+
+  const handleDateConfirm = (): void => {
+    const d = parseInt(pickerDay, 10)
+    const m = parseInt(pickerMonth, 10)
+    const y = parseInt(pickerYear, 10)
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 2000 && y <= 2100) {
+      const date = new Date(y, m - 1, d)
+      if (!isNaN(date.getTime())) setExpirationDate(date)
+    }
+    setShowPicker(false)
+  }
   const [ripeness, setRipeness] = useState<RipenessStatus | undefined>(initial?.ripeness)
   const [ripenessCheckedAt, setRipenessCheckedAt] = useState<string | undefined>(
     initial?.ripenessCheckedAt
@@ -185,7 +206,7 @@ export const IngredientForm: React.FC<Props> = ({ initial, onSubmit, submitLabel
             <Text style={styles.chipText}>{label}</Text>
           </TouchableOpacity>
         ))}
-        <TouchableOpacity style={styles.chip} onPress={() => setShowPicker(true)}>
+        <TouchableOpacity style={styles.chip} onPress={handleOpenPicker}>
           <Text style={styles.chipText}>Pick date</Text>
         </TouchableOpacity>
       </View>
@@ -199,22 +220,50 @@ export const IngredientForm: React.FC<Props> = ({ initial, onSubmit, submitLabel
         </View>
       )}
 
-      {showPicker && (
-        <DateTimePicker
-          value={expirationDate ?? new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-          onChange={(_, date) => {
-            if (Platform.OS !== 'ios') setShowPicker(false)
-            if (date) setExpirationDate(date)
-          }}
-        />
-      )}
-      {showPicker && Platform.OS === 'ios' && (
-        <TouchableOpacity style={styles.doneButton} onPress={() => setShowPicker(false)}>
-          <Text style={styles.doneText}>Done</Text>
-        </TouchableOpacity>
-      )}
+      <Modal transparent animationType="fade" visible={showPicker} onRequestClose={() => setShowPicker(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Pick a date</Text>
+            <View style={styles.dateRow}>
+              <TextInput
+                style={styles.dateInput}
+                value={pickerDay}
+                onChangeText={setPickerDay}
+                keyboardType="numeric"
+                maxLength={2}
+                placeholder="DD"
+                placeholderTextColor={Colors.placeholder}
+              />
+              <Text style={styles.dateSep}>/</Text>
+              <TextInput
+                style={styles.dateInput}
+                value={pickerMonth}
+                onChangeText={setPickerMonth}
+                keyboardType="numeric"
+                maxLength={2}
+                placeholder="MM"
+                placeholderTextColor={Colors.placeholder}
+              />
+              <Text style={styles.dateSep}>/</Text>
+              <TextInput
+                style={[styles.dateInput, { width: 64 }]}
+                value={pickerYear}
+                onChangeText={setPickerYear}
+                keyboardType="numeric"
+                maxLength={4}
+                placeholder="YYYY"
+                placeholderTextColor={Colors.placeholder}
+              />
+            </View>
+            <TouchableOpacity style={styles.confirmButton} onPress={handleDateConfirm}>
+              <Text style={styles.confirmText}>Confirm</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPicker(false)}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitText}>{submitLabel}</Text>
@@ -298,8 +347,42 @@ const styles = StyleSheet.create({
   toggleLabel: { fontSize: FontSizes.body, color: Colors.textMuted, flex: 1 },
   dateText: { fontSize: FontSizes.md, color: Colors.textSecondary, paddingVertical: Spacing.xs },
   clearText: { fontSize: FontSizes.md, color: Colors.danger, paddingVertical: Spacing.xs },
-  doneButton: { alignSelf: 'flex-end', padding: Spacing.sm },
-  doneText: { color: Colors.primary, fontWeight: '600', fontSize: FontSizes.base },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radii.md,
+    padding: Spacing.xl,
+    width: 280,
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  modalTitle: { fontSize: FontSizes.lg, fontWeight: '600', color: Colors.textSecondary },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radii.md,
+    padding: Spacing.sm,
+    fontSize: FontSizes.lg,
+    color: Colors.textSecondary,
+    width: 44,
+    textAlign: 'center',
+  },
+  dateSep: { fontSize: FontSizes.lg, color: Colors.textMuted },
+  confirmButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radii.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.xs,
+  },
+  confirmText: { color: Colors.surface, fontWeight: '600', fontSize: FontSizes.base },
+  cancelText: { color: Colors.textMuted, fontSize: FontSizes.base },
   submitButton: {
     backgroundColor: Colors.primary,
     borderRadius: Radii.md,
