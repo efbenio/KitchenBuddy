@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "KitchenBuddy",
-    "slug": "KitchenBuddy",
+    "slug": "kitchenbuddy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -34,7 +34,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "4d86b24c-a4ec-4b3f-9d10-3e7727107d0a"
+        "projectId": "6a2a8ba2-6bb1-448e-8e7f-72c69cd64928"
       }
     },
     "owner": "efbenio",
